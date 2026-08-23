@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Electric | Power Factor & Capacitor Bank Diagnostic Suite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ke: {
+                            orange: '#F15A24',
+                            'orange-hover': '#D94815',
+                            'orange-light': '#FFF4EE',
+                            navy: '#002B49',
+                            'navy-dark': '#001E33',
+                            'navy-light': '#00406C',
+                            blue: '#005696',
+                            green: '#00A651',
+                            'green-light': '#E8F8F0',
+                            bg: '#F4F7FA'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf.js for instant clean PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body class="bg-ke-bg text-slate-800 min-h-screen antialiased">
+
+    <!-- Top K-Electric Header Bar -->
+    <header class="no-print sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Top brand strip -->
+            <div class="h-2 bg-gradient-to-r from-ke-orange via-ke-navy to-ke-blue"></div>
+            
+            <div class="h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <!-- Official KE Logo Image -->
+                    <div class="flex items-center">
+                        <img src="K-Electric Logo.png" alt="K-Electric Logo" class="h-10 w-auto object-contain">
+                    </div>
+                    <div class="border-l border-slate-300 pl-3">
+                        <h1 class="text-base sm:text-lg font-extrabold text-ke-navy tracking-tight" id="headerTitle">
+                            Power Factor Calculator
+                        </h1>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Language Toggle -->
+                    <button id="langToggleBtn" onclick="toggleLanguage()" class="text-xs font-bold px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-100 text-ke-navy transition flex items-center space-x-1">
+                        <i data-lucide="globe" class="w-3.5 h-3.5 text-ke-navy"></i>
+                        <span id="langLabel">Urdu / اردو</span>
+                    </button>
+
+                    <!-- Export PDF Button -->
+                    <button onclick="generatePDFReport()" class="flex items-center space-x-1.5 text-xs font-bold bg-ke-orange hover:bg-ke-orange-hover text-white px-3.5 py-2 rounded-lg shadow-md shadow-ke-orange/20 transition active:scale-95">
+                        <i data-lucide="file-down" class="w-4 h-4"></i>
+                        <span id="txtExportPDF">Export KE Report</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6" id="reportContent">
+
+        <!-- Top Hero Diagnostic Alert Banner -->
+        <div id="statusBanner" class="p-5 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border-slate-200 shadow-sm">
+            <div class="flex items-center space-x-4">
+                <div id="statusIconBg" class="w-12 h-12 rounded-xl flex items-center justify-center bg-ke-orange-light text-ke-orange flex-shrink-0">
+                    <i id="statusIcon" data-lucide="zap" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span id="statusBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full ke-badge-orange">
+                            KE TARIFF ASSESSMENT READY
+                        </span>
+                        <span class="text-xs text-slate-400">•</span>
+                        <span class="text-xs font-medium text-slate-500" id="statusSummaryTime">Real-Time Calculation</span>
+                    </div>
+                    <h2 id="statusTitle" class="text-base sm:text-lg font-bold text-ke-navy mt-0.5">
+                        Enter bill values to calculate.
+                    </h2>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button onclick="resetAll()" class="no-print text-xs font-semibold text-slate-600 hover:text-ke-navy flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span id="txtReset">Reset All</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Metric Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- KPI 1: Current Power Factor -->
+            <div class="ke-card p-5 relative overflow-hidden flex flex-col justify-between border-t-4 border-t-ke-blue">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold tracking-wider uppercase text-slate-500" id="lblCurrentPF">
+                        Current PF
+                    </span>
+                    <span id="kpiPfStatusBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                        --
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline space-x-2">
+                    <span id="valCurrentPF" class="text-4xl font-extrabold tracking-tight text-ke-navy font-mono">
+                        0.000
+                    </span>
+                    <span class="text-xs font-medium text-slate-500" id="valCurrentAngle">0.0° lag</span>
+                </div>
+                <div class="mt-4 w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div id="kpiPfProgressBar" class="h-full bg-ke-blue transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- KPI 2: Target Power Factor -->
+            <div class="ke-card p-5 relative overflow-hidden flex flex-col justify-between border-t-4 border-t-ke-navy">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold tracking-wider uppercase text-slate-500" id="lblTargetPF">
+                        Target PF (NEPRA / KE)
+                    </span>
+                    <i data-lucide="target" class="w-4 h-4 text-ke-navy"></i>
+                </div>
+                <div class="mt-3 flex items-baseline space-x-2">
+                    <span id="valTargetPF" class="text-4xl font-extrabold tracking-tight text-ke-navy font-mono">
+                        0.950
+                    </span>
+                    <span class="text-xs font-medium text-slate-500" id="valTargetAngle">18.2° lag</span>
+                </div>
+                <div class="mt-4 flex items-center justify-between text-xs text-slate-600">
+                    <span>Loss Reduction:</span>
+                    <span id="valLossReduction" class="font-bold text-ke-green font-mono">0.0%</span>
+                </div>
+            </div>
+
+            <!-- KPI 3: Required Capacitor Capacity -->
+            <div class="ke-card p-5 relative overflow-hidden flex flex-col justify-between border-t-4 border-t-ke-orange">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold tracking-wider uppercase text-slate-500" id="lblRequiredCap">
+                        Required Capacity
+                    </span>
+                    <i data-lucide="battery-charging" class="w-4 h-4 text-ke-orange"></i>
+                </div>
+                <div class="mt-3 flex items-baseline space-x-1.5">
+                    <span id="valRequiredCapacity" class="text-4xl font-extrabold tracking-tight text-ke-orange font-mono">
+                        0.0
+                    </span>
+                    <span class="text-sm font-bold text-slate-600">kVAR</span>
+                </div>
+                <div class="mt-4 flex items-center justify-between text-xs text-slate-600">
+                    <span>Reactive Deficit:</span>
+                    <span id="valReactiveDelta" class="font-mono font-bold text-slate-700">0 kVARh</span>
+                </div>
+            </div>
+
+            <!-- KPI 4: Recommended Capacitor Bank -->
+            <div class="ke-card p-5 relative overflow-hidden flex flex-col justify-between border-t-4 border-t-ke-green ke-highlight">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold tracking-wider uppercase text-slate-500" id="lblRecBank">
+                        Recommended Bank
+                    </span>
+                    <i data-lucide="layers" class="w-4 h-4 text-ke-green"></i>
+                </div>
+                <div class="mt-2">
+                    <p id="valRecommendedBank" class="text-xs font-bold text-ke-navy leading-snug line-clamp-2 font-mono">
+                        Enter bill values to calculate.
+                    </p>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-xs">
+                    <span class="text-slate-500">KE Standard Sizes:</span>
+                    <span class="font-bold text-ke-navy">100 / 50 / 25 / 12.5</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Main Workspace: 2-Column Split Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Column: Input Forms (7 Cols) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- SECTION 1: Electricity Bill Data -->
+                <div class="ke-card p-6 relative">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="p-2 rounded-lg bg-ke-orange-light text-ke-orange">
+                                <i data-lucide="receipt" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-ke-navy" id="secBillDataTitle">
+                                    1. Monthly Electricity Bill Data (K-Electric TOD Meter)
+                                </h3>
+                                <p class="text-xs text-slate-500 font-medium" id="secBillDataSub">
+                                    Enter active (kWh) and reactive (kVARh) meter readings from your KE bill
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        
+                        <!-- Active Energy Peak -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                <span id="lblEnergyPeak">Energy - Peak (kWh)</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-bold font-mono">Active kW</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="inpEnergyPeak" min="0" step="any" placeholder="0" 
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-ke-navy focus:ring-2 focus:ring-ke-orange focus:bg-white transition"
+                                    oninput="recalculateAll()">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">kWh</span>
+                            </div>
+                        </div>
+
+                        <!-- Active Energy Off-Peak -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                <span id="lblEnergyOffPeak">Energy - Off Peak (kWh)</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-bold font-mono">Active kW</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="inpEnergyOffPeak" min="0" step="any" placeholder="0" 
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-ke-navy focus:ring-2 focus:ring-ke-orange focus:bg-white transition"
+                                    oninput="recalculateAll()">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">kWh</span>
+                            </div>
+                        </div>
+
+                        <!-- Reactive Energy Peak -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                <span id="lblReactivePeak">Reactive Energy - Peak (kVARh)</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-orange-50 text-ke-orange font-bold font-mono">Reactive kVAR</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="inpReactivePeak" min="0" step="any" placeholder="0" 
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-ke-navy focus:ring-2 focus:ring-ke-orange focus:bg-white transition"
+                                    oninput="recalculateAll()">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">kVARh</span>
+                            </div>
+                        </div>
+
+                        <!-- Reactive Energy Off-Peak -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                <span id="lblReactiveOffPeak">Reactive Energy - Off Peak (kVARh)</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-orange-50 text-ke-orange font-bold font-mono">Reactive kVAR</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="inpReactiveOffPeak" min="0" step="any" placeholder="0" 
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-ke-navy focus:ring-2 focus:ring-ke-orange focus:bg-white transition"
+                                    oninput="recalculateAll()">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">kVARh</span>
+                            </div>
+                        </div>
+
+                        <!-- MDI (kW) -->
+                        <div class="space-y-1.5 sm:col-span-2">
+                            <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                <span id="lblMDI">MDI — Maximum Demand Indicator (kW)</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-ke-navy/10 text-ke-navy font-bold font-mono">Used for kVAR Sizing</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="inpMDI" min="0" step="any" placeholder="0" 
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-ke-navy focus:ring-2 focus:ring-ke-orange focus:bg-white transition"
+                                    oninput="recalculateAll()">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">kW</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400">From "MDI (kW)" column of your K-Electric bill — used in formula: <span class="font-mono text-ke-navy">Qc = MDI × [tan(cos⁻¹PF₁) − tan(cos⁻¹PF₂)]</span></p>
+                        </div>
+
+                    </div>
+
+                    <!-- Desired Power Factor Slider & Presets -->
+                    <div class="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold text-ke-navy flex items-center space-x-1.5" id="lblDesiredPF">
+                                <span>Desired Target Power Factor</span>
+                                <span class="text-[10px] text-slate-400 font-normal">(NEPRA Standard: 0.90 - 0.95)</span>
+                            </label>
+                            <div class="flex items-center space-x-1.5">
+                                <button type="button" onclick="setDesiredPF(0.90)" class="px-2 py-0.5 text-xs font-mono font-semibold rounded bg-slate-100 text-slate-700 hover:bg-ke-orange-light hover:text-ke-orange transition">0.90 (NEPRA Min)</button>
+                                <button type="button" onclick="setDesiredPF(0.95)" class="px-2 py-0.5 text-xs font-mono font-bold rounded bg-ke-orange text-white hover:bg-ke-orange-hover transition">0.95 (Recommended)</button>
+                                <button type="button" onclick="setDesiredPF(0.98)" class="px-2 py-0.5 text-xs font-mono font-semibold rounded bg-slate-100 text-slate-700 hover:bg-ke-orange-light hover:text-ke-orange transition">0.98</button>
+                                <button type="button" onclick="setDesiredPF(1.00)" class="px-2 py-0.5 text-xs font-mono font-semibold rounded bg-slate-100 text-slate-700 hover:bg-ke-orange-light hover:text-ke-orange transition">1.00</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="rngDesiredPF" min="0.80" max="1.00" step="0.01" value="0.95"
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-ke-orange"
+                                oninput="syncDesiredPFInput(this.value)">
+                            <span id="dispDesiredPFVal" class="text-sm font-extrabold font-mono text-ke-orange min-w-[3rem] text-right">0.95</span>
+                        </div>
+                    </div>
+
+                    <!-- Computed Subtotals -->
+                    <div class="mt-4 grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 text-xs border border-slate-200">
+                        <div>
+                            <span class="text-slate-500 font-medium">Total Active Energy:</span>
+                            <span id="dispTotalActive" class="font-extrabold text-ke-navy font-mono ml-1">0 kWh</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 font-medium">Total Reactive Energy:</span>
+                            <span id="dispTotalReactive" class="font-extrabold text-ke-navy font-mono ml-1">0 kVARh</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: Existing Capacitor Bank Audit -->
+                <div class="ke-card p-6 relative">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="p-2 rounded-lg bg-emerald-50 text-ke-green">
+                                <i data-lucide="layers" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-ke-navy" id="secBankAuditTitle">
+                                    2. Existing Capacitor Bank Inventory
+                                </h3>
+                                <p class="text-xs text-slate-500 font-medium" id="secBankAuditSub">
+                                    Audit installed stage capacity against required compensation
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Toggle Switch -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-ke-navy" id="lblHaveBank">Already have bank?</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="chkHasExistingBank" class="sr-only peer" onchange="toggleExistingBankSection()">
+                                <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ke-orange"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="existingBankPanel" class="hidden mt-5 space-y-4">
+                        <p class="text-xs text-slate-600 font-medium">
+                            Enter the quantity of each standard capacitor step currently installed in your panel:
+                        </p>
+
+                        <!-- Step Grid with Stepper Counters -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            
+                            <!-- 100 kVAR -->
+                            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center">
+                                <span class="text-xs font-bold text-ke-navy">100 kVAR</span>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button onclick="adjustBankStep('s100', -1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">-</button>
+                                    <input type="number" id="step_s100" value="0" min="0" class="w-10 text-center font-mono font-bold text-xs bg-transparent border-0 text-ke-navy" oninput="recalculateBank()">
+                                    <button onclick="adjustBankStep('s100', 1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 50 kVAR -->
+                            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center">
+                                <span class="text-xs font-bold text-ke-navy">50 kVAR</span>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button onclick="adjustBankStep('s50', -1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">-</button>
+                                    <input type="number" id="step_s50" value="0" min="0" class="w-10 text-center font-mono font-bold text-xs bg-transparent border-0 text-ke-navy" oninput="recalculateBank()">
+                                    <button onclick="adjustBankStep('s50', 1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 25 kVAR -->
+                            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center">
+                                <span class="text-xs font-bold text-ke-navy">25 kVAR</span>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button onclick="adjustBankStep('s25', -1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">-</button>
+                                    <input type="number" id="step_s25" value="0" min="0" class="w-10 text-center font-mono font-bold text-xs bg-transparent border-0 text-ke-navy" oninput="recalculateBank()">
+                                    <button onclick="adjustBankStep('s25', 1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 12.5 kVAR -->
+                            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center">
+                                <span class="text-xs font-bold text-ke-navy">12.5 kVAR</span>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button onclick="adjustBankStep('s12_5', -1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">-</button>
+                                    <input type="number" id="step_s12_5" value="0" min="0" class="w-10 text-center font-mono font-bold text-xs bg-transparent border-0 text-ke-navy" oninput="recalculateBank()">
+                                    <button onclick="adjustBankStep('s12_5', 1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 7.5 kVAR -->
+                            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center">
+                                <span class="text-xs font-bold text-ke-navy">7.5 kVAR</span>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button onclick="adjustBankStep('s7_5', -1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">-</button>
+                                    <input type="number" id="step_s7_5" value="0" min="0" class="w-10 text-center font-mono font-bold text-xs bg-transparent border-0 text-ke-navy" oninput="recalculateBank()">
+                                    <button onclick="adjustBankStep('s7_5', 1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 5.0 kVAR -->
+                            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center">
+                                <span class="text-xs font-bold text-ke-navy">5 kVAR</span>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button onclick="adjustBankStep('s5', -1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">-</button>
+                                    <input type="number" id="step_s5" value="0" min="0" class="w-10 text-center font-mono font-bold text-xs bg-transparent border-0 text-ke-navy" oninput="recalculateBank()">
+                                    <button onclick="adjustBankStep('s5', 1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 3.5 kVAR -->
+                            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center">
+                                <span class="text-xs font-bold text-ke-navy">3.5 kVAR</span>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button onclick="adjustBankStep('s3_5', -1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">-</button>
+                                    <input type="number" id="step_s3_5" value="0" min="0" class="w-10 text-center font-mono font-bold text-xs bg-transparent border-0 text-ke-navy" oninput="recalculateBank()">
+                                    <button onclick="adjustBankStep('s3_5', 1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 2.5 kVAR -->
+                            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center">
+                                <span class="text-xs font-bold text-ke-navy">2.5 kVAR</span>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button onclick="adjustBankStep('s2_5', -1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">-</button>
+                                    <input type="number" id="step_s2_5" value="0" min="0" class="w-10 text-center font-mono font-bold text-xs bg-transparent border-0 text-ke-navy" oninput="recalculateBank()">
+                                    <button onclick="adjustBankStep('s2_5', 1)" class="w-7 h-7 rounded-lg ke-step-btn flex items-center justify-center font-bold text-sm shadow-sm">+</button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Bank Capacity Summary -->
+                        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                            <div>
+                                <span class="text-slate-600 font-medium">Total Installed Bank:</span>
+                                <span id="dispTotalInstalledBank" class="font-extrabold text-ke-navy font-mono text-sm ml-1">0.0 kVAR</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-600 font-medium">Net Deficit to Install:</span>
+                                <span id="dispNetDeficitBank" class="font-extrabold text-ke-orange font-mono text-sm ml-1">0.0 kVAR</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- SECTION 3: Transformer Energized / No-Load Compensation -->
+                <div class="ke-card p-6 relative">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="p-2 rounded-lg bg-amber-50 text-amber-700">
+                                <i data-lucide="cpu" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-ke-navy" id="secTxTitle">
+                                    3. Transformer Energized / Factory Shutdown
+                                </h3>
+                                <p class="text-xs text-slate-500 font-medium" id="secTxSub">
+                                    Estimate fixed no-load reactive compensation during idle/night periods
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        
+                        <!-- Factory load during shutdown -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700" id="lblShutdownLoad">
+                                Factory load during shutdown (kW)
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="inpShutdownKW" min="0" step="any" placeholder="0" value="0"
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-ke-navy focus:ring-2 focus:ring-ke-orange focus:bg-white transition"
+                                    oninput="recalculateTx()">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">kW</span>
+                            </div>
+                        </div>
+
+                        <!-- Transformer rating kVA -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700" id="lblTxRating">
+                                Transformer Rating (kVA)
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="inpTxKVA" min="0" step="any" placeholder="0" value="0"
+                                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-ke-navy focus:ring-2 focus:ring-ke-orange focus:bg-white transition"
+                                    oninput="recalculateTx()">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">kVA</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Quick Preset Transformer Buttons -->
+                    <div class="mt-3 flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs">
+                        <span class="text-[11px] text-slate-400 font-bold mr-1">KE Substation Ratings:</span>
+                        <button type="button" onclick="setTxKVA(200)" class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-semibold hover:bg-ke-orange-light hover:text-ke-orange transition">200 kVA</button>
+                        <button type="button" onclick="setTxKVA(400)" class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-semibold hover:bg-ke-orange-light hover:text-ke-orange transition">400 kVA</button>
+                        <button type="button" onclick="setTxKVA(630)" class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-semibold hover:bg-ke-orange-light hover:text-ke-orange transition">630 kVA</button>
+                        <button type="button" onclick="setTxKVA(1000)" class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-semibold hover:bg-ke-orange-light hover:text-ke-orange transition">1000 kVA</button>
+                        <button type="button" onclick="setTxKVA(1500)" class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-semibold hover:bg-ke-orange-light hover:text-ke-orange transition">1500 kVA</button>
+                    </div>
+
+                    <!-- Transformer Results Grid -->
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-xs">
+                        <div>
+                            <span class="text-slate-600 font-medium">Est. No-Load Requirement (10%):</span>
+                            <div id="dispTxReq" class="font-extrabold text-ke-navy font-mono text-sm mt-0.5">0.0 kVAR</div>
+                        </div>
+                        <div>
+                            <span class="text-slate-600 font-medium">Recommended Fixed Step:</span>
+                            <div id="dispTxStep" class="font-extrabold text-amber-800 font-mono text-sm mt-0.5">0.0 kVAR</div>
+                        </div>
+                    </div>
+
+                    <p class="mt-3 text-[11px] text-slate-500 italic">
+                        * Engineering note: Transformer no-load requirement is an estimate based on rating and a generic 10% reactive assumption. Actual test data may differ.
+                    </p>
+                </div>
+
+                <!-- SECTION 4: Solar PV / PF Controller Diagnostic -->
+                <div class="ke-card p-6 relative">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="p-2 rounded-lg bg-orange-50 text-ke-orange">
+                                <i data-lucide="sun" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-ke-navy" id="secSolarTitle">
+                                    4. Net-Metered Solar PV / PF Controller Check
+                                </h3>
+                                <p class="text-xs text-slate-500 font-medium" id="secSolarSub">
+                                    Prevent controller hunting and low PF penalty on grid-tied solar sites
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Has Solar Checkbox -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-ke-navy" id="lblHasSolar">Solar Installed?</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="chkHasSolar" class="sr-only peer" onchange="toggleSolarSection()">
+                                <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ke-orange"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="solarPanel" class="hidden mt-5 space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700" id="lblCTLocation">
+                                PF Controller Current Transformer (CT) Location:
+                            </label>
+                            <select id="selCTLocation" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-ke-navy focus:ring-2 focus:ring-ke-orange transition" onchange="recalculateSolar()">
+                                <option value="upstream">Upstream of Solar connection (Recommended / Optimal for KE Grid)</option>
+                                <option value="downstream">Downstream / After Solar Inverter tap (High Penalty Risk)</option>
+                                <option value="main_incomer">Main Utility Incomer / PCC</option>
+                            </select>
+                        </div>
+
+                        <!-- Diagnostic Alert Box -->
+                        <div id="solarAlertBox" class="p-4 rounded-xl border text-xs transition-all flex items-start space-x-3 bg-emerald-50 border-emerald-300 text-emerald-900">
+                            <i id="solarAlertIcon" data-lucide="check-circle" class="w-5 h-5 flex-shrink-0 mt-0.5 text-ke-green"></i>
+                            <div>
+                                <h4 id="solarAlertTitle" class="font-bold text-xs">Optimal CT Placement</h4>
+                                <p id="solarAlertText" class="mt-1 text-[11px] leading-relaxed">
+                                    Controller senses the true net grid exchange. When solar feeds active power, controller only compensates the remaining reactive load drawn from the grid.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Visualizer & Diagnostics & Notes (5 Cols) -->
+            <div class="lg:col-span-5 space-y-6">
+
+                <!-- Power Triangle Canvas Vector Visualizer -->
+                <div class="ke-card p-6 relative border-t-4 border-t-ke-navy">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="triangle" class="w-4 h-4 text-ke-navy"></i>
+                            <h3 class="text-sm font-bold text-ke-navy" id="secTriangleTitle">
+                                Interactive Power Triangle
+                            </h3>
+                        </div>
+                        <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-ke-badge-navy text-ke-navy">
+                            P · Q · S Vectors
+                        </span>
+                    </div>
+
+                    <div class="mt-4 flex flex-col items-center justify-center">
+                        <div class="relative w-full aspect-[4/3] bg-white rounded-xl overflow-hidden shadow-inner flex items-center justify-center border border-slate-200">
+                            <canvas id="powerTriangleCanvas" width="400" height="300" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Legend & Vector Details -->
+                    <div class="mt-4 grid grid-cols-2 gap-2 text-[11px]">
+                        <div class="flex items-center space-x-2 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                            <div class="w-2.5 h-2.5 rounded-full bg-ke-blue"></div>
+                            <div>
+                                <span class="text-slate-500 font-medium">Active (P):</span>
+                                <span id="legActivePower" class="font-mono font-bold block text-ke-navy">0.0 kW</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                            <div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
+                            <div>
+                                <span class="text-slate-500 font-medium">Initial Reactive (Q₁):</span>
+                                <span id="legReactiveInitial" class="font-mono font-bold block text-rose-600">0.0 kVAR</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                            <div class="w-2.5 h-2.5 rounded-full bg-ke-green"></div>
+                            <div>
+                                <span class="text-slate-500 font-medium">Target Reactive (Q₂):</span>
+                                <span id="legReactiveTarget" class="font-mono font-bold block text-emerald-700">0.0 kVAR</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                            <div class="w-2.5 h-2.5 rounded-full bg-ke-orange"></div>
+                            <div>
+                                <span class="text-slate-500 font-medium">Capacitor Bank (Qc):</span>
+                                <span id="legCapacitorComp" class="font-mono font-bold block text-ke-orange">0.0 kVAR</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Engineering Step Matrix Card -->
+                <div class="ke-card p-6 relative border-t-4 border-t-ke-orange">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="cpu" class="w-4 h-4 text-ke-orange"></i>
+                            <h3 class="text-sm font-bold text-ke-navy" id="secStepsBreakdownTitle">
+                                Stage Breakdown Partition
+                            </h3>
+                        </div>
+                        <span class="text-[10px] text-slate-500 font-bold">Standard Stages</span>
+                    </div>
+
+                    <div class="mt-4 space-y-2.5 text-xs">
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                            <span class="font-semibold text-slate-700">100 kVAR Stage:</span>
+                            <span id="resStep100" class="font-mono font-extrabold text-ke-navy">0 units</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                            <span class="font-semibold text-slate-700">50 kVAR Stage:</span>
+                            <span id="resStep50" class="font-mono font-extrabold text-ke-navy">0 units</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                            <span class="font-semibold text-slate-700">25 kVAR Stage:</span>
+                            <span id="resStep25" class="font-mono font-extrabold text-ke-navy">0 units</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                            <span class="font-semibold text-slate-700">12.5 kVAR Stage:</span>
+                            <span id="resStep12_5" class="font-mono font-extrabold text-ke-navy">0 units</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                            <span class="font-semibold text-slate-700">Fine Trim Residual:</span>
+                            <span id="resStepTrim" class="font-mono font-extrabold text-slate-500">0.0 kVAR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Engineering Assumptions & Notes (Sheet 3) -->
+                <div class="ke-card p-6 relative">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="book-open" class="w-4 h-4 text-ke-navy"></i>
+                            <h3 class="text-sm font-bold text-ke-navy" id="secNotesTitle">
+                                Assumptions & NEPRA/KE Guidelines
+                            </h3>
+                        </div>
+                    </div>
+
+                    <ul class="mt-4 space-y-2 text-[11px] text-slate-600 list-disc list-inside leading-relaxed" id="listNotes">
+                        <li>Current PF is calculated from integrated monthly active (kWh) and reactive (kVARh) bill data.</li>
+                        <li>Recommended steps utilize nominal heavy-duty standard ratings: 100, 50, 25, 12.5, 7.5, 5, 3.5 & 2.5 kVAR.</li>
+                        <li>NEPRA / KE Tariff penalty rule: PF below 0.90 is subject to low power factor penalty.</li>
+                        <li>Transformer no-load estimate uses a generic 10% reactive baseline.</li>
+                    </ul>
+
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                        <span>PFI Technical Support:</span>
+                        <a href="mailto:powerfactor@gmail.com" class="font-bold text-ke-orange hover:underline">
+                            powerfactor@gmail.com
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer with KE Branding -->
+    <footer class="no-print border-t border-slate-200 mt-12 py-6 bg-white text-xs text-center text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+                <img src="K-Electric Logo.png" alt="KE Logo" class="h-6 w-auto object-contain">
+                <span class="font-bold text-ke-navy">K-Electric Power Quality & Energy Audit Platform</span>
+            </div>
+            <p class="text-[11px]">Compliant with NEPRA Grid Code & K-Electric Industrial Tariff Specifications</p>
+        </div>
+    </footer>
+
+    <!-- App State and Controller Script -->
+    <script src="calculator.js"></script>
+    <script>
+        // Language Dictionary
+        let currentLang = 'en';
+        const i18n = {
+            en: {
+                subtitle: 'Energy Conservation & Power Quality Assessment | NEPRA & KE Tariff',
+                exportPDF: 'Export KE Report',
+                reset: 'Reset All',
+                currentPF: 'Current PF',
+                targetPF: 'Target PF (NEPRA / KE)',
+                requiredCap: 'Required Capacity',
+                recBank: 'Recommended Bank',
+                secBillTitle: '1. Monthly Electricity Bill Data (K-Electric TOD Meter)',
+                secBillSub: 'Enter active (kWh) and reactive (kVARh) meter readings from your KE bill',
+                lblEnergyPeak: 'Energy - Peak (kWh)',
+                lblEnergyOffPeak: 'Energy - Off Peak (kWh)',
+                lblReactivePeak: 'Reactive Energy - Peak (kVARh)',
+                lblReactiveOffPeak: 'Reactive Energy - Off Peak (kVARh)',
+                lblDesiredPF: 'Desired Target Power Factor',
+                secBankTitle: '2. Existing Capacitor Bank Inventory',
+                secBankSub: 'Audit installed stage capacity against required compensation',
+                lblHaveBank: 'Already have bank?',
+                secTxTitle: '3. Transformer Energized / Factory Shutdown',
+                secTxSub: 'Estimate fixed no-load reactive compensation during idle/night periods',
+                lblShutdownLoad: 'Factory load during shutdown (kW)',
+                lblTxRating: 'Transformer Rating (kVA)',
+                secSolarTitle: '4. Net-Metered Solar PV / PF Controller Check',
+                secSolarSub: 'Prevent controller hunting and low PF penalty on grid-tied solar sites',
+                lblHasSolar: 'Solar Installed?',
+                lblCTLocation: 'PF Controller Current Transformer (CT) Location:'
+            },
+            ur: {
+                subtitle: 'کے الیکٹرک پاور کوالٹی اور انرجی آڈٹ کیلکولیٹر',
+                exportPDF: 'پی ڈی ایف رپورٹ ڈاؤنلوڈ',
+                reset: 'تمام ڈیٹا صاف کریں',
+                currentPF: 'موجودہ پاور فیکٹر (PF)',
+                targetPF: 'مطلوبہ پاور فیکٹر (Target)',
+                requiredCap: 'مطلوبہ کپیسیٹر صلاحیت',
+                recBank: 'تجویز کردہ کپیسیٹر بینک',
+                secBillTitle: '1. کے الیکٹرک بل کا ڈیٹا (TOD Meter)',
+                secBillSub: 'اپنے بجلی کے بل سے ایکٹو (kWh) اور ری ایکٹو (kVARh) ریڈنگز درج کریں',
+                lblEnergyPeak: 'پیک انرجی - Peak (kWh)',
+                lblEnergyOffPeak: 'آف پیک انرجی - Off Peak (kWh)',
+                lblReactivePeak: 'ری ایکٹو انرجی - Peak (kVARh)',
+                lblReactiveOffPeak: 'ری ایکٹو انرجی - Off Peak (kVARh)',
+                lblDesiredPF: 'مطلوبہ پاور فیکٹر ٹارگٹ (Desired PF)',
+                secBankTitle: '2. موجودہ کپیسیٹر بینک کا آڈٹ',
+                secBankSub: 'پہلے سے لگے ہوئے کپیسیٹر مراحل کی صلاحیت چیک کریں',
+                lblHaveBank: 'کیا پہلے سے بینک موجود ہے؟',
+                secTxTitle: '3. ٹرانسفارمر نو-لوڈ معاوضہ / فیکٹری بندش',
+                secTxSub: 'رات کے وقت یا فیکٹری بند ہونے پر نو-لوڈ فکسڈ کپیسیٹر کی ضرورت',
+                lblShutdownLoad: 'بندش کے دوران لوڈ (kW)',
+                lblTxRating: 'ٹرانسفارمر کی ریٹنگ (kVA)',
+                secSolarTitle: '4. سولر پی وی اور پی ایف کنٹرولر چیک',
+                secSolarSub: 'سولر والے پراجیکٹ پر کنٹرولر کی غلط ریڈنگ اور اوور کمپنسیشن سے بچاؤ',
+                lblHasSolar: 'کیا سولر لگا ہوا ہے؟',
+                lblCTLocation: 'پی ایف کنٹرولر سی ٹی (CT) سینسر کی جگہ:'
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ur' : 'en';
+            document.getElementById('langLabel').innerText = currentLang === 'en' ? 'Urdu / اردو' : 'English';
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const t = i18n[currentLang];
+            if (document.getElementById('headerTitle')) {
+                document.getElementById('headerTitle').innerText = currentLang === 'en' ? 'Power Factor Calculator' : 'پاور فیکٹر کیلکولیٹر';
+            }
+            document.getElementById('txtExportPDF').innerText = t.exportPDF;
+            document.getElementById('txtReset').innerText = t.reset;
+            document.getElementById('lblCurrentPF').innerText = t.currentPF;
+            document.getElementById('lblTargetPF').innerText = t.targetPF;
+            document.getElementById('lblRequiredCap').innerText = t.requiredCap;
+            document.getElementById('lblRecBank').innerText = t.recBank;
+            document.getElementById('secBillDataTitle').innerText = t.secBillTitle;
+            document.getElementById('secBillDataSub').innerText = t.secBillSub;
+            document.getElementById('lblEnergyPeak').innerText = t.lblEnergyPeak;
+            document.getElementById('lblEnergyOffPeak').innerText = t.lblEnergyOffPeak;
+            document.getElementById('lblReactivePeak').innerText = t.lblReactivePeak;
+            document.getElementById('lblReactiveOffPeak').innerText = t.lblReactiveOffPeak;
+            document.getElementById('lblDesiredPF').innerText = t.lblDesiredPF;
+            document.getElementById('secBankAuditTitle').innerText = t.secBankTitle;
+            document.getElementById('secBankAuditSub').innerText = t.secBankSub;
+            document.getElementById('lblHaveBank').innerText = t.lblHaveBank;
+            document.getElementById('secTxTitle').innerText = t.secTxTitle;
+            document.getElementById('secTxSub').innerText = t.secTxSub;
+            document.getElementById('lblShutdownLoad').innerText = t.lblShutdownLoad;
+            document.getElementById('lblTxRating').innerText = t.lblTxRating;
+            document.getElementById('secSolarTitle').innerText = t.secSolarTitle;
+            document.getElementById('secSolarSub').innerText = t.secSolarSub;
+            document.getElementById('lblHasSolar').innerText = t.lblHasSolar;
+            document.getElementById('lblCTLocation').innerText = t.lblCTLocation;
+        }
+
+        // Toggle UI Panels
+        function toggleExistingBankSection() {
+            const chk = document.getElementById('chkHasExistingBank');
+            const panel = document.getElementById('existingBankPanel');
+            if (chk.checked) {
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+            }
+            recalculateBank();
+        }
+
+        function toggleSolarSection() {
+            const chk = document.getElementById('chkHasSolar');
+            const panel = document.getElementById('solarPanel');
+            if (chk.checked) {
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+            }
+            recalculateSolar();
+        }
+
+        // Stepper adjust
+        function adjustBankStep(stepKey, delta) {
+            const inp = document.getElementById(`step_${stepKey}`);
+            let val = parseInt(inp.value, 10) || 0;
+            val = Math.max(0, val + delta);
+            inp.value = val;
+            recalculateBank();
+        }
+
+        function setDesiredPF(val) {
+            document.getElementById('rngDesiredPF').value = val;
+            syncDesiredPFInput(val);
+        }
+
+        function syncDesiredPFInput(val) {
+            document.getElementById('dispDesiredPFVal').innerText = Number(val).toFixed(2);
+            document.getElementById('valTargetPF').innerText = Number(val).toFixed(3);
+            recalculateAll();
+        }
+
+        function setTxKVA(kva) {
+            document.getElementById('inpTxKVA').value = kva;
+            recalculateTx();
+        }
+
+        // Core Calculation Orchestration
+        let latestBillResult = null;
+
+        function recalculateAll() {
+            const energyPeak      = parseFloat(document.getElementById('inpEnergyPeak').value)      || 0;
+            const energyOffPeak   = parseFloat(document.getElementById('inpEnergyOffPeak').value)   || 0;
+            const reactivePeak    = parseFloat(document.getElementById('inpReactivePeak').value)    || 0;
+            const reactiveOffPeak = parseFloat(document.getElementById('inpReactiveOffPeak').value) || 0;
+            const mdi             = parseFloat(document.getElementById('inpMDI').value)             || 0;
+            const desiredPF       = parseFloat(document.getElementById('rngDesiredPF').value)       || 0.95;
+
+            const res = PFEngine.calculateBillPF({
+                energyPeak,
+                energyOffPeak,
+                reactivePeak,
+                reactiveOffPeak,
+                mdi,
+                desiredPF
+            });
+            latestBillResult = res;
+
+            // Update UI elements
+            document.getElementById('dispTotalActive').innerText   = `${res.totalActiveEnergy.toLocaleString()} kWh`;
+            document.getElementById('dispTotalReactive').innerText = `${res.totalReactiveEnergy.toLocaleString()} kVARh`;
+            document.getElementById('valCurrentPF').innerText      = res.currentPF.toFixed(3);
+            document.getElementById('valCurrentAngle').innerText   = `${res.currentAngleDeg.toFixed(1)}° lag`;
+            document.getElementById('valTargetAngle').innerText    = `${res.targetAngleDeg.toFixed(1)}° lag`;
+            document.getElementById('valRequiredCapacity').innerText = res.requiredCompensation.toFixed(1);
+            document.getElementById('valReactiveDelta').innerText  = `${res.requiredCompensation.toFixed(0)} kVARh`;
+            document.getElementById('valRecommendedBank').innerText = res.recommendationText;
+            document.getElementById('valLossReduction').innerText  = `${res.currentReductionPercent.toFixed(1)}%`;
+
+            // Progress bar and gauge color
+            const pb = document.getElementById('kpiPfProgressBar');
+            const pfPercent = Math.min(100, Math.max(0, (res.currentPF / 1.0) * 100));
+            pb.style.width = `${pfPercent}%`;
+
+            const pfBadge = document.getElementById('kpiPfStatusBadge');
+            if (res.currentPF <= 0) {
+                pfBadge.innerText = 'No Data';
+                pfBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600';
+                pb.className = 'h-full bg-slate-300 transition-all duration-500';
+            } else if (res.currentPF >= desiredPF) {
+                pfBadge.innerText = '✓ Optimal (Compliant)';
+                pfBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-md ke-badge-green';
+                pb.className = 'h-full bg-ke-green transition-all duration-500';
+            } else if (res.currentPF >= 0.90) {
+                pfBadge.innerText = 'Acceptable (NEPRA Min)';
+                pfBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200';
+                pb.className = 'h-full bg-blue-500 transition-all duration-500';
+            } else {
+                pfBadge.innerText = '⚠ Low PF Penalty Risk';
+                pfBadge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200';
+                pb.className = 'h-full bg-rose-500 transition-all duration-500';
+            }
+
+            // Status Banner update
+            const banner = document.getElementById('statusBanner');
+            const iconBg = document.getElementById('statusIconBg');
+            const title  = document.getElementById('statusTitle');
+            const badge  = document.getElementById('statusBadge');
+
+            if (res.status === 'OPTIMAL') {
+                banner.className = 'p-5 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-emerald-50 border-emerald-300 shadow-sm';
+                iconBg.className = 'w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-100 text-emerald-700 flex-shrink-0';
+                badge.className  = 'text-xs font-bold px-2.5 py-0.5 rounded-full ke-badge-green';
+                badge.innerText  = 'HEALTHY & NEPRA COMPLIANT';
+                title.innerText  = res.statusMessage;
+            } else if (res.status === 'BELOW_TARGET') {
+                banner.className = 'p-5 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-orange-50/80 border-orange-300 shadow-sm';
+                iconBg.className = 'w-12 h-12 rounded-xl flex items-center justify-center bg-ke-orange-light text-ke-orange flex-shrink-0';
+                badge.className  = 'text-xs font-bold px-2.5 py-0.5 rounded-full ke-badge-orange';
+                badge.innerText  = 'COMPENSATION RECOMMENDED (AVOID PENALTY)';
+                title.innerText  = res.statusMessage;
+            } else {
+                banner.className = 'p-5 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border-slate-200 shadow-sm';
+                iconBg.className = 'w-12 h-12 rounded-xl flex items-center justify-center bg-slate-100 text-ke-navy flex-shrink-0';
+                badge.className  = 'text-xs font-bold px-2.5 py-0.5 rounded-full ke-badge-navy';
+                badge.innerText  = 'KE TARIFF ASSESSMENT READY';
+                title.innerText  = res.statusMessage;
+            }
+
+            // Steps breakdown — all 8 standard steps
+            const sb = res.stepBreakdown;
+            document.getElementById('resStep100').innerText   = `${sb.step100} units (${sb.step100 * 100} kVAR)`;
+            document.getElementById('resStep50').innerText    = `${sb.step50} units (${sb.step50 * 50} kVAR)`;
+            document.getElementById('resStep25').innerText    = `${sb.step25} units (${sb.step25 * 25} kVAR)`;
+            document.getElementById('resStep12_5').innerText  = `${sb.step12_5} units (${sb.step12_5 * 12.5} kVAR)`;
+            document.getElementById('resStepTrim').innerText  = `${sb.residual.toFixed(1)} kVAR`;
+
+            // Update Power Triangle
+            drawPowerTriangle();
+
+            // Also recalculate bank deficit if open
+            recalculateBank();
+            saveToStorage();
+        }
+
+        function recalculateBank() {
+            const counts = {
+                s100: document.getElementById('step_s100').value,
+                s50: document.getElementById('step_s50').value,
+                s25: document.getElementById('step_s25').value,
+                s12_5: document.getElementById('step_s12_5').value,
+                s7_5: document.getElementById('step_s7_5').value,
+                s5: document.getElementById('step_s5').value,
+                s3_5: document.getElementById('step_s3_5').value,
+                s2_5: document.getElementById('step_s2_5').value
+            };
+
+            const reqComp = latestBillResult ? latestBillResult.requiredCompensation : 0;
+            const res = PFEngine.calculateExistingBank(counts, reqComp);
+
+            document.getElementById('dispTotalInstalledBank').innerText = `${res.totalInstalled.toFixed(1)} kVAR`;
+            document.getElementById('dispNetDeficitBank').innerText = `${res.netAdditionalRequired.toFixed(1)} kVAR`;
+        }
+
+        function recalculateTx() {
+            const kva = parseFloat(document.getElementById('inpTxKVA').value) || 0;
+            const kw = parseFloat(document.getElementById('inpShutdownKW').value) || 0;
+            const res = PFEngine.calculateTransformerNoLoad(kva, kw);
+
+            document.getElementById('dispTxReq').innerText = `${res.estimatedNoLoadRequirement.toFixed(1)} kVAR`;
+            document.getElementById('dispTxStep').innerText = `${res.recommendedStep.toFixed(1)} kVAR`;
+            saveToStorage();
+        }
+
+        function recalculateSolar() {
+            const hasSolar = document.getElementById('chkHasSolar').checked;
+            const loc = document.getElementById('selCTLocation').value;
+            const diag = PFEngine.getSolarDiagnostic(hasSolar, loc);
+
+            const box = document.getElementById('solarAlertBox');
+            const title = document.getElementById('solarAlertTitle');
+            const text = document.getElementById('solarAlertText');
+
+            title.innerText = diag.title;
+            text.innerText = diag.advice;
+            box.className = `p-4 rounded-xl border text-xs transition-all flex items-start space-x-3 ${diag.alertClass}`;
+            saveToStorage();
+        }
+
+        // Dynamic Canvas Power Triangle Renderer (Clean Light Blueprint Theme)
+        function drawPowerTriangle() {
+            const canvas = document.getElementById('powerTriangleCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Clean white/light background
+            ctx.fillStyle = '#FAFCFF';
+            ctx.fillRect(0, 0, width, height);
+
+            const P = latestBillResult ? latestBillResult.totalActiveEnergy : 0;
+            const Q1 = latestBillResult ? latestBillResult.totalReactiveEnergy : 0;
+            const Q2 = latestBillResult ? latestBillResult.targetReactive : 0;
+            const Qc = latestBillResult ? latestBillResult.requiredCompensation : 0;
+
+            document.getElementById('legActivePower').innerText = `${P.toLocaleString()} kW`;
+            document.getElementById('legReactiveInitial').innerText = `${Q1.toLocaleString()} kVAR`;
+            document.getElementById('legReactiveTarget').innerText = `${Q2.toFixed(1)} kVAR`;
+            document.getElementById('legCapacitorComp').innerText = `${Qc.toFixed(1)} kVAR`;
+
+            if (P <= 0 && Q1 <= 0) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '13px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Enter bill data to render vector power triangle', width / 2, height / 2);
+                return;
+            }
+
+            // Coordinate mapping
+            const padding = 45;
+            const scaleX = (width - padding * 2) / Math.max(P, 1);
+            const scaleY = (height - padding * 2) / Math.max(Q1, 1);
+            const scale = Math.min(scaleX, scaleY);
+
+            const originX = padding;
+            const originY = padding; // Top-left origin
+
+            const pEndX = originX + (P * scale);
+            const pEndY = originY;
+
+            const q1EndY = originY + (Q1 * scale);
+            const q2EndY = originY + (Q2 * scale);
+
+            // Subtle Grid background lines
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(width - padding, originY);
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX, height - padding);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 1. Active Power Vector P (Horizontal Line - KE Navy/Blue)
+            ctx.strokeStyle = '#002B49';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(pEndX, pEndY);
+            ctx.stroke();
+
+            // Label P
+            ctx.fillStyle = '#002B49';
+            ctx.font = 'bold 11px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`P = ${Math.round(P)} kW`, (originX + pEndX) / 2, originY - 12);
+
+            // 2. Initial Reactive Vector Q1 (Vertical Down - Rose/Red)
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(pEndX, pEndY);
+            ctx.lineTo(pEndX, q1EndY);
+            ctx.stroke();
+
+            // 3. Compensated Reactive Vector Q2 (KE Green)
+            ctx.strokeStyle = '#00A651';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(pEndX, pEndY);
+            ctx.lineTo(pEndX, q2EndY);
+            ctx.stroke();
+
+            // 4. Capacitor Compensation Vector Qc (KE Orange Arrow)
+            if (Qc > 0) {
+                ctx.strokeStyle = '#F15A24';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(pEndX + 8, q1EndY);
+                ctx.lineTo(pEndX + 8, q2EndY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Arrowhead on Qc
+                ctx.fillStyle = '#F15A24';
+                ctx.beginPath();
+                ctx.moveTo(pEndX + 8, q2EndY);
+                ctx.lineTo(pEndX + 4, q2EndY + 8);
+                ctx.lineTo(pEndX + 12, q2EndY + 8);
+                ctx.fill();
+            }
+
+            // 5. Apparent Power S1 (Initial Hypotenuse - Dashed Red)
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(pEndX, q1EndY);
+            ctx.stroke();
+
+            // 6. Apparent Power S2 (New Hypotenuse - Solid Green/Blue)
+            ctx.strokeStyle = '#005696';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(pEndX, q2EndY);
+            ctx.stroke();
+
+            // Angle arc θ1
+            ctx.strokeStyle = '#64748B';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(originX, originY, 30, 0, Math.atan2(Q1 * scale, P * scale));
+            ctx.stroke();
+        }
+
+        function resetAll() {
+            document.getElementById('inpEnergyPeak').value = '';
+            document.getElementById('inpEnergyOffPeak').value = '';
+            document.getElementById('inpReactivePeak').value = '';
+            document.getElementById('inpReactiveOffPeak').value = '';
+            document.getElementById('rngDesiredPF').value = 0.95;
+            document.getElementById('chkHasExistingBank').checked = false;
+            document.getElementById('chkHasSolar').checked = false;
+            document.getElementById('inpTxKVA').value = 0;
+            document.getElementById('inpShutdownKW').value = 0;
+            toggleExistingBankSection();
+            toggleSolarSection();
+            syncDesiredPFInput(0.95);
+            recalculateTx();
+            recalculateSolar();
+            localStorage.removeItem('ke_pfi_saved_data');
+        }
+
+        function saveToStorage() {
+            const data = {
+                energyPeak: document.getElementById('inpEnergyPeak').value,
+                energyOffPeak: document.getElementById('inpEnergyOffPeak').value,
+                reactivePeak: document.getElementById('inpReactivePeak').value,
+                reactiveOffPeak: document.getElementById('inpReactiveOffPeak').value,
+                desiredPF: document.getElementById('rngDesiredPF').value,
+                hasBank: document.getElementById('chkHasExistingBank').checked,
+                hasSolar: document.getElementById('chkHasSolar').checked,
+                ctLoc: document.getElementById('selCTLocation').value,
+                txKVA: document.getElementById('inpTxKVA').value,
+                shutdownKW: document.getElementById('inpShutdownKW').value
+            };
+            localStorage.setItem('ke_pfi_saved_data', JSON.stringify(data));
+        }
+
+        function loadFromStorage() {
+            const raw = localStorage.getItem('ke_pfi_saved_data');
+            if (raw) {
+                try {
+                    const data = JSON.parse(raw);
+                    if (data.energyPeak) document.getElementById('inpEnergyPeak').value = data.energyPeak;
+                    if (data.energyOffPeak) document.getElementById('inpEnergyOffPeak').value = data.energyOffPeak;
+                    if (data.reactivePeak) document.getElementById('inpReactivePeak').value = data.reactivePeak;
+                    if (data.reactiveOffPeak) document.getElementById('inpReactiveOffPeak').value = data.reactiveOffPeak;
+                    if (data.desiredPF) {
+                        document.getElementById('rngDesiredPF').value = data.desiredPF;
+                        syncDesiredPFInput(data.desiredPF);
+                    }
+                    if (data.hasBank) {
+                        document.getElementById('chkHasExistingBank').checked = true;
+                        toggleExistingBankSection();
+                    }
+                    if (data.hasSolar) {
+                        document.getElementById('chkHasSolar').checked = true;
+                        toggleSolarSection();
+                    }
+                    if (data.ctLoc) document.getElementById('selCTLocation').value = data.ctLoc;
+                    if (data.txKVA) document.getElementById('inpTxKVA').value = data.txKVA;
+                    if (data.shutdownKW) document.getElementById('inpShutdownKW').value = data.shutdownKW;
+                } catch(e) {}
+            }
+        }
+
+        // Instant PDF Report Generator
+        function generatePDFReport() {
+            const element = document.getElementById('reportContent');
+            const opt = {
+                margin:       10,
+                filename:     `KE_Power_Factor_Diagnostic_Report_${new Date().toISOString().slice(0,10)}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadFromStorage();
+            recalculateAll();
+            recalculateTx();
+            recalculateSolar();
+            window.addEventListener('resize', drawPowerTriangle);
+        });
+    </script>
+</body>
+</html>

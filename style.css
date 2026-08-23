@@ -1,0 +1,109 @@
+/* K-Electric (KE) Official Corporate Theme Styles */
+
+:root {
+    --ke-orange: #F15A24;
+    --ke-orange-hover: #D94815;
+    --ke-orange-light: #FFF4EE;
+    --ke-navy: #002B49;
+    --ke-navy-dark: #001E33;
+    --ke-blue: #005696;
+    --ke-green: #00A651;
+    --ke-bg: #F4F7FA;
+    --card-bg: #FFFFFF;
+    --border-color: #E2E8F0;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--ke-bg);
+    color: #1E293B;
+}
+
+/* K-Electric Card Styles */
+.ke-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 15px -2px rgba(0, 43, 73, 0.05), 0 2px 6px -2px rgba(0, 43, 73, 0.03);
+    border-radius: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ke-card:hover {
+    box-shadow: 0 8px 25px -4px rgba(0, 43, 73, 0.08), 0 4px 10px -3px rgba(0, 43, 73, 0.04);
+}
+
+.ke-header-gradient {
+    background: linear-gradient(135deg, #002B49 0%, #00406C 60%, #F15A24 100%);
+}
+
+.ke-badge-orange {
+    background-color: #FFF4EE;
+    color: #D94815;
+    border: 1px solid #FCD3B6;
+}
+
+.ke-badge-navy {
+    background-color: #EBF2F7;
+    color: #002B49;
+    border: 1px solid #CCE0ED;
+}
+
+.ke-badge-green {
+    background-color: #E8F8F0;
+    color: #008742;
+    border: 1px solid #A6E7C3;
+}
+
+/* Custom Number Input Stepper */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Stepper buttons */
+.ke-step-btn {
+    transition: all 0.15s ease;
+    background: #F1F5F9;
+    color: #002B49;
+}
+.ke-step-btn:hover {
+    background: #E2E8F0;
+    color: #F15A24;
+}
+.ke-step-btn:active {
+    transform: scale(0.92);
+}
+
+/* Soft pulse highlight */
+@keyframes ke-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(241, 90, 36, 0.35);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(241, 90, 36, 0);
+    }
+}
+
+.ke-highlight {
+    animation: ke-pulse 2.5s infinite ease-in-out;
+}
+
+/* Print specific formatting */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    .no-print {
+        display: none !important;
+    }
+    .ke-card {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        background: white !important;
+    }
+}
