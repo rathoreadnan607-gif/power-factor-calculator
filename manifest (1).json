@@ -1,0 +1,13 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Power Factor Calculator",
+  "orientation": "any",
+  "scope": "/power-factor-calculator/",
+  "short_name": "PF Calculator",
+  "start_url": "/power-factor-calculator/",
+  "theme_color": "#ffffff",
+  "id": "power-factor-calculator",
+  "lang": "en"
+}
